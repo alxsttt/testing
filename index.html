@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>For Nicole — A Minimal Birthday</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  body {
+    margin:0;
+    font-family:'Inter',sans-serif;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    background:#fafafa;
+    color:#111;
+  }
+  .wrap {
+    width:90%;
+    max-width:800px;
+    padding:40px;
+    background:white;
+    border-radius:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.06);
+    text-align:center;
+  }
+  h1 { font-weight:600; margin-bottom:5px; }
+  h2 { font-weight:400; margin-top:0; margin-bottom:20px; color:#666; font-size:16px; }
+  .envelopes { display:flex; flex-direction:column; gap:15px; margin-bottom:30px; }
+  .env {
+    padding:15px;
+    border-radius:10px;
+    background:linear-gradient(180deg,#fff,#f7f7f7);
+    border:1px solid #ddd;
+    cursor:pointer;
+    transition:transform 0.2s;
+  }
+  .env.locked { cursor:not-allowed; opacity:0.6; }
+  .env:hover { transform:scale(1.02); }
+  .message { padding:15px; border-radius:10px; background:#fff; border:1px solid #ddd; margin-top:15px; display:none; }
+  .countdown { margin-top:20px; font-size:14px; color:#666; }
+  .modalOverlay {
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.5);
+    display:flex; justify-content:center; align-items:center;
+    opacity:0; pointer-events:none;
+    transition:opacity 0.3s;
+  }
+  .modalOverlay.show { opacity:1; pointer-events:auto; }
+  .modal {
+    background:white; padding:25px; border-radius:12px; max-width:400px; width:90%;
+  }
+  .inputRow { display:flex; gap:8px; margin-top:12px; }
+  .inputRow input { flex:1; padding:10px; border-radius:8px; border:1px solid #ddd; }
+  .inputRow button { padding:10px 14px; border-radius:8px; border:none; background:#d9b8c9; color:white; font-weight:600; cursor:pointer; }
+  .shake { animation:shake 0.45s; }
+  @keyframes shake {
+    0% { transform:translateX(0); } 20% { transform:translateX(-6px); } 40% { transform:translateX(6px); } 
+    60% { transform:translateX(-4px); } 80% { transform:translateX(4px); } 100% { transform:translateX(0); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Welcome Nicole</h1>
+  <h2>This is for your 24th birthday. I love you ❤️</h2>
+  <div id="envelopes" class="envelopes"></div>
+  <div id="messageArea" class="message"></div>
+  <div class="countdown" id="countdown"></div>
+</div>
+
+<div id="lockModal" class="modalOverlay" aria-hidden="true">
+  <div class="modal">
+    <h3>Enter the code to unlock the website</h3>
+    <div class="inputRow">
+      <input id="passInput" type="password" placeholder="Enter code" />
+      <button id="unlockBtn">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PASSCODE = '071225';
+const envelopesData = [
+  {
+    id:'env1',
+    title:'Before you Fly',
+    message:'Thank you for making time for me these past days, weeks and everything in between! I appreciate you a lot and I don\\'t ever take that for granted. I\\'m here and I\\'m not going anywhere. I hope when things get heavy or tiring, you remember that there\\'s someone who\\'s always rooting for you! Take care, babe! I\\'ll see you soon. I love you so much!',
+    unlockDate: new Date('2025-11-08T09:00:00'),
+  },
+  {
+    id:'env2',
+    title:'A reminder',
+    message:'If you ever forget how much loved you are, just look at your phone or even your surroundings. They are everywhere!',
+    unlockDate: new Date('2025-11-09T09:00:00'),
+  },
+  {
+    id:'env3',
+    title:'Letter',
+    message:'Come see me',
+    unlockDate: new Date('2025-11-10T21:15:00'),
+  }
+];
+
+const envelopesEl = document.getElementById('envelopes');
+const messageArea = document.getElementById('messageArea');
+const countdownEl = document.getElementById('countdown');
+const lockModal = document.getElementById('lockModal');
+const passInput = document.getElementById('passInput');
+const unlockBtn = document.getElementById('unlockBtn');
+
+lockModal.classList.add('show');
+passInput.focus();
+
+function unlockSite() {
+  if(passInput.value === PASSCODE) {
+    lockModal.classList.remove('show');
+    renderEnvelopes();
+  } else {
+    const modal = lockModal.querySelector('.modal');
+    modal.classList.remove('shake');
+    void modal.offsetWidth;
+    modal.classList.add('shake');
+    passInput.value = '';
+    passInput.focus();
+  }
+}
+
+unlockBtn.addEventListener('click', unlockSite);
+passInput.addEventListener('keydown', e => { if(e.key==='Enter') unlockSite(); });
+
+function getPHTime() {
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const phTime = new Date(utc + (8*60*60*1000));
+  return phTime;
+}
+
+function renderEnvelopes() {
+  envelopesData.forEach(env => {
+    const div = document.createElement('div');
+    div.className = 'env';
+    div.dataset.id = env.id;
+    const now = getPHTime();
+    if(now < env.unlockDate) div.classList.add('locked');
+    div.innerHTML = env.title;
+    div.addEventListener('click', () => openEnvelope(env, div));
+    envelopesEl.appendChild(div);
+  });
+  updateCountdown();
+  setInterval(updateCountdown,1000);
+}
+
+function openEnvelope(env, div) {
+  const now = getPHTime();
+  if(now < env.unlockDate) return;
+  messageArea.style.display = 'block';
+  messageArea.innerHTML = `<h3>${env.title}</h3><p>${env.message}</p>`;
+}
+
+function updateCountdown() {
+  const now = getPHTime();
+  const upcoming = envelopesData.filter(e => now < e.unlockDate).sort((a,b)=>a.unlockDate-b.unlockDate)[0];
+  if(!upcoming) {
+    countdownEl.textContent = '';
+    return;
+  }
+  const diff = upcoming.unlockDate - now;
+  const days = Math.floor(diff/(1000*60*60*24));
+  const hours = Math.floor((diff/(1000*60*60))%24);
+  const minutes = Math.floor((diff/(1000*60))%60);
+  const seconds = Math.floor((diff/1000)%60);
+  countdownEl.textContent = `Next envelope unlocks in ${days}d ${hours}h ${minutes}m ${seconds}s`;
+}
+
+// --- Personalized greeting ---
+const greetingEl = document.querySelector('h1');
+function updateGreeting() {
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const phTime = new Date(utc + 8*60*60*1000);
+  const hour = phTime.getHours();
+  let greeting = 'Welcome Nicole';
+  if(hour >= 5 && hour < 12) greeting = 'Good morning, Nicole ❤️';
+  else if(hour >= 12 && hour < 18) greeting = 'Good afternoon, Nicole ❤️';
+  else greeting = 'Good evening, Nicole ❤️';
+  greetingEl.textContent = greeting;
+}
+updateGreeting();
+setInterval(updateGreeting, 60000);
+
+// --- Custom cursor over envelopes ---
+const style = document.createElement('style');
+style.textContent = `
+.env:hover { cursor: url('data:image/svg+xml;utf8,<svg fill="%23d9b8c9" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>') 12 12, pointer; }
+`;
+document.head.appendChild(style);
+</script>
+</body>
+</html>
